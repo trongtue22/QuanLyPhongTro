@@ -7,10 +7,16 @@ use App\Models\khachthue;
 use App\Models\phongtro;
 use App\Models\khachthue_phongtro;
 use App\Models\quanly;
+use App\Models\hoadon;
+use App\Models\DichVu;
+use App\Models\hopdong;
 use Illuminate\Cache\Console\ForgetCommand;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 class KhachThueController extends Controller
 {
     
@@ -23,7 +29,7 @@ class KhachThueController extends Controller
     // Khách thuê theo dãy trọ 
     public function show($id)
     {
-      
+
         // Lấy từ phòng trọ -> khách thuê
         $phongtro = Phongtro::with('khachthues')->findOrFail($id);
         
@@ -350,6 +356,194 @@ class KhachThueController extends Controller
    }
    
 
+   public function khachthueDashboard()
+   {
+    
+       $khachthueId = session('khachthue_id');
+
+        // Tải thêm mối quan hệ 'chutro' khi tìm khách thuê
+       $khachThue = KhachThue::with('phongtros.khachthues', 'phongtros.daytro.quanly', 'chutro')->findOrFail($khachthueId);
+        $chuTroEmail = $khachThue->chutro->email ?? 'Không có thông tin Chủ trọ';
+
+       $groupedByDaytro = $khachThue->phongtros->groupBy('daytro.tendaytro');
+
+       $currentPage = request()->get('page', 1);
+       $perPage = 5; // Number of dãy trọ per page
+
+       // Get the keys (dãy trọ names)
+       $daytroKeys = $groupedByDaytro->keys()->toArray();
+
+       // Slice the keys based on the current page
+       $slicedKeys = array_slice($daytroKeys, ($currentPage - 1) * $perPage, $perPage);
+
+       // Create a new collection containing only the dãy trọ for the current page
+       $paginatedGroupedByDaytro = new Collection();
+       foreach ($slicedKeys as $key) {
+           $paginatedGroupedByDaytro->put($key, $groupedByDaytro->get($key));
+       }
+      
+       $quanLys = $khachThue->phongtros
+        ->map(fn($phong) => $phong->daytro->quanly) // lấy trực tiếp object
+        ->filter()                                 // bỏ các giá trị null
+        ->unique('id')                             // loại trùng theo id
+        ->values();                                // reset key
+
+       $paginator = new LengthAwarePaginator(
+           $paginatedGroupedByDaytro,
+           $groupedByDaytro->count(),
+           $perPage,
+           $currentPage,
+           ['path' => request()->url()]
+       );
+
+    //    dd($chuTroEmail);
+       
+       return view('customer.dashboard', [
+           'groupedByDaytro' => $paginator, // Pass the paginator of dãy trọ
+           'khachThue' => $khachThue,
+           'quanLys' => $quanLys, // thêm dòng này
+           'chuTroEmail' => $chuTroEmail, // Thêm email của chủ trọ
+       ]);
+   }
+  
+
+
+    public function khachthueHoaDon($phongtro_id)
+    {
+        // Lấy phòng trọ
+        $phong = PhongTro::with(['daytro'])->findOrFail($phongtro_id);
+
+        // Lấy id khách thuê từ session (khách thuê đang đăng nhập)
+        $khachthue_id = session('khachthue_id');
+
+        // Tìm các hợp đồng của khách thuê này trong phòng trọ này
+        $hopdongIds = HopDong::whereHas('khachthue_phongtro', function ($query) use ($khachthue_id, $phongtro_id) {
+            $query->where('khachthue_id', $khachthue_id)
+                  ->where('phongtro_id', $phongtro_id);
+        })->pluck('id');
+
+        // Lấy tất cả hóa đơn của hợp đồng này
+        $hoadons = HoaDon::whereIn('hopdong_id', $hopdongIds)
+            ->with([
+                'hopdong.khachthue_phongtro.khachthue',
+                'hopdong.khachthue_phongtro.phongtro.daytro'
+            ])
+            ->orderByDesc('created_at')
+            ->paginate(5);
+
+        // Lấy toàn bộ dịch vụ mới nhất theo từng dãy trọ
+        $dichvus = DichVu::orderByDesc('id')
+            ->get()
+            ->unique('daytro_id')
+            ->keyBy('daytro_id');
+
+        // Gán dịch vụ cho từng hóa đơn
+        foreach ($hoadons as $hoadon) {
+            $daytroId = optional($hoadon->hopdong?->khachthue_phongtro?->phongtro?->daytro)->id;
+            $hoadon->dv = $dichvus[$daytroId] ?? null;
+        }
+
+        return view('customer.hoadon', compact('hoadons', 'phong'));
+    }
+
+
+   public function sendEmail(Request $request)
+{
+    $request->validate([
+        'recipient' => 'required|string',
+        'subject' => 'required|string|max:255',
+        'message' => 'required|string|max:1000',
+    ]);
+
+    $recipient = $request->input('recipient');
+    $subject = 'Liên hệ từ khách thuê: ' . session('khachthue_name');
+
+    if (str_starts_with($recipient, 'manager_')) // Nếu mã nhập có từ bắt đầu là 'manager_' 
+    {
+        $id = (int) str_replace('manager_', '', $recipient);
+        // Gửi mail cho quản lý 
+        $quanly = QuanLy::find($id);
+        if (!$quanly || !$quanly->email) {
+            return back()->withErrors(['recipient' => 'Không tìm thấy quản lý.']);
+        }
+        $toEmail = $quanly->email;
+
+    } 
+    elseif (str_starts_with($recipient, 'chutro_')) // Nếu mã nhập có từ bắt đầu là 'chutro_' 
+    {
+        
+        $toEmail = str_replace('chutro_', '', $recipient); // Lấy email từ mã nhập bằng cách bỏ chữ chutro ra khỏi string 
+
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) // Dùng  FILTER_VALIDATE_EMAIL để kiem tra dinh dang Emaail
+        {
+            dd(3);
+            return back()->withErrors(['recipient' => 'Email chủ trọ không hợp lệ.']);
+        }
+
+    } 
+    else // Nếu TH ko phải chủ trọ hay cả quản lý  
+    {
+        return back()->withErrors(['recipient' => 'Người nhận không hợp lệ.']);
+    }
+
    
+    // Gửi mail tới cho chủ trọ sau khi gán email vô ToEmail
+    Mail::raw($request->message, function ($mail) use ($toEmail, $subject) 
+    {
+        $mail->to($toEmail)->subject($subject);
+    });
+
+    flash()->option('position', 'top-center')->timeout(2000)->success('Đã gửi email thành công!');
+
+    return redirect()->back();
+}
+
+    public function profile()
+    {
+        $khachthueId = session('khachthue_id');
+       
+        $khachThue = KhachThue::findOrFail($khachthueId);
+
+        // dd($khachThue);
+        return view('customer.profile', compact('khachThue'));
+    }
+   
+
+    public function updateProfile(Request $request, $id)
+    {
+      
+        // Xác thực dữ liệu đầu vào từ form
+        $request->validate([
+            'tenkhachthue' => 'required|string|max:255',
+            'sodienthoai' => 'nullable|string|max:20',
+            'ngaysinh' => 'nullable|date',
+            'gioitinh' => 'nullable|integer|in:0,1,2', // 0: Nam, 1: Nữ, 2: Khác
+            'cccd' => 'nullable|string|max:20|unique:khachthue,cccd,' . $id, // Giữ nguyên validation dù là readonly ở view để bảo mật
+        ]);
+
+        // Tìm khách thuê theo ID
+        $khachThue = KhachThue::findOrFail($id);
+
+        // Kiểm tra bảo mật: Đảm bảo khách thuê đang đăng nhập có quyền cập nhật hồ sơ này
+        // Đây là bước rất quan trọng để tránh người dùng thay đổi thông tin của người khác
+        if (session('khachthue_id') != $khachThue->id) {
+            return back()->with('error', 'Bạn không có quyền cập nhật hồ sơ này.');
+        }
+
+        // Cập nhật thông tin khách thuê
+        $khachThue->tenkhachthue = $request->tenkhachthue;
+        $khachThue->sodienthoai = $request->sodienthoai;
+        $khachThue->ngaysinh = $request->ngaysinh;
+        $khachThue->gioitinh = $request->gioitinh;
+        // Lưu thay đổi vào cơ sở dữ liệu
+        $khachThue->save();
+
+       
+
+        // Chuyển hướng trở lại trang profile với thông báo thành công
+        flash()->option('position', 'top-center')->timeout(1000)->success('Đã thêm khách thuê thành công');
+
+          return redirect()->back();
+    }
 
 }

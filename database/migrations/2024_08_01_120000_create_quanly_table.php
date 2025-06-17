@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('chutro_id')->constrained('ChuTro')->onDelete('cascade'); 
             $table->string('ho_ten');
+            $table->string('email')->unique();
             $table->string('sodienthoai');
             $table->boolean('gioitinh');
             $table->string('mat_khau');

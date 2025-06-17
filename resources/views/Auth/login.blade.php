@@ -12,7 +12,18 @@
                 <img src="https://i.pinimg.com/564x/80/e8/a6/80e8a62cbd2780e7af5b2bbc887946cb.jpg" alt="BootstrapBrain Logo" width="175" height="57">
               </a>
             </div>
-            <h2 class="fs-6 fw-normal text-center text-secondary mb-4">Điền thông tin đăng nhập</h2>
+            @if(session()->has('user_type'))
+            <h2 class="fs-6 fw-normal text-center text-secondary mb-4">
+            <i class="bi bi-person-badge-fill text-primary me-2"></i>
+              Điền thông tin đăng nhập cho <strong>quản lý</strong>
+            </h2>
+            @else
+            <h2 class="fs-6 fw-normal text-center text-secondary mb-4">
+              <i class="bi bi-person-fill-gear text-success me-2"></i>
+              Điền thông tin đăng nhập <strong>chủ trọ</strong>
+            </h2>
+            @endif
+           
              
             {{-- Hiện modal thông báo --}}
             @if (session('success'))
@@ -59,7 +70,7 @@
             @else
               <form action="{{ route('auth.login') }}" method="post">
             @endif
-              @csrf
+              @csrf 
               <div class="row gy-2 overflow-hidden">
                 
                 <div class="col-12">
@@ -68,8 +79,8 @@
                           <input type="email" class="form-control" name="email" id="email" placeholder="name@example.com" required>
                           <label for="email" class="form-label">Email</label>
                       @else
-                          <input type="tel" class="form-control" name="phone" id="phone" placeholder="Số điện thoại" required>
-                          <label for="phone" class="form-label">Số điện thoại</label>
+                          <input type="email" class="form-control" name="email" id="email" placeholder="name@example.com" required>
+                          <label for="email" class="form-label">Email</label>
                       @endif
                   </div>
               </div>

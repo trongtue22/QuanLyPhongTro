@@ -93,12 +93,10 @@
 
 <script>       
     $(document).ready(function() {
-        
         // Mở modal nếu có lỗi validation
         @if ($errors->{'update_errors_' . $daytro->id}->any())
             $('#editModal{{ $daytro->id }}').modal('show');
         @endif
-
 
         let provincesData = null;
         let districtsData = {};
@@ -127,8 +125,13 @@
             }
 
             // When province is selected, load districts (with caching)
-            $provinceSelect.change(function() {
+            $provinceSelect.off('change').on('change', function() {
                 const idtinh = $(this).find('option:selected').data('id');
+
+                // Reset district and commune selections
+                $districtSelect.empty().append('<option selected disabled value="">Chọn Huyện</option>').val('');
+                $communeSelect.empty().append('<option selected disabled value="">Chọn Xã</option>').val('');
+
                 if (!districtsData[idtinh]) {
                     $.getJSON('https://esgoo.net/api-tinhthanh/2/' + idtinh + '.htm', function(data_quan) {
                         if (data_quan.error === 0) {
@@ -142,7 +145,7 @@
             });
 
             function populateDistricts(districts) {
-                $districtSelect.empty().append('<option value="">Chọn Huyện</option>');
+                $districtSelect.empty().append('<option selected disabled value="">Chọn Huyện</option>');
                 $.each(districts, function(key, value) {
                     $districtSelect.append('<option value="'+value.full_name+'" data-id="'+value.id+'">'+value.full_name+'</option>');
                 });
@@ -150,8 +153,12 @@
             }
 
             // When district is selected, load communes (with caching)
-            $districtSelect.change(function() {
+            $districtSelect.off('change').on('change', function() {
                 const idquan = $(this).find('option:selected').data('id');
+
+                // Reset commune dropdown
+                $communeSelect.empty().append('<option selected disabled value="">Chọn Xã</option>').val('');
+
                 if (!communesData[idquan]) {
                     $.getJSON('https://esgoo.net/api-tinhthanh/3/' + idquan + '.htm', function(data_phuong) {
                         if (data_phuong.error === 0) {
@@ -165,7 +172,7 @@
             });
 
             function populateCommunes(communes) {
-                $communeSelect.empty().append('<option value="">Chọn Xã</option>');
+                $communeSelect.empty().append('<option selected disabled value="">Chọn Xã</option>');
                 $.each(communes, function(key, value) {
                     $communeSelect.append('<option value="'+value.full_name+'" data-id="'+value.id+'">'+value.full_name+'</option>');
                 });

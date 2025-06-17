@@ -2,7 +2,7 @@
 
 {{-- Phần Heading --}}
 @section('heading')
-  Danh sách thống kê
+  Thống kê
 @endsection
 
 @section('breadcrumb')
@@ -13,7 +13,7 @@
 
 
 
-{{-- Phần content --}}
+{{-- Phần content     --}}
 @section('content')
 
 <div class="container mt-1">
@@ -126,6 +126,82 @@
                 </div>
             </div>
         </div>
+
+        {{-- Toggle cuối tháng --}}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <!-- Nút PDF bên trái -->
+            <form action="{{ route('stats.download.pdf') }}" method="POST" class="d-inline">
+                @csrf
+                <button class="btn btn-danger">
+                    <i class="fas fa-file-pdf"></i> Tải PDF thống kê
+                </button>
+            </form>
+        
+            <!-- Toggle gửi mail bên phải -->
+            @if(!session()->has('user_type')) 
+            <form action="{{route('toggle.autoemail')}}" method="POST" class="form-inline mb-0">
+                @csrf
+                <label class="mr-2 font-weight-bold mb-0" for="autoEmailToggle">
+                    Gửi email thống kê cuối tháng:
+                </label>
+                <input type="checkbox" id="autoEmailToggle" name="auto_email"
+                onchange="this.form.submit()"
+                {{ $chutro->send_monthly ? 'checked' : '' }}
+                style="width: 20px; height: 20px; vertical-align: middle;">
+            </form>
+            @endif
+        </div>
+        
+        
+
+
+
+        {{-- Thống kê hóa đơn --}}
+        <h5 class="text-center mb-3">Tổng kết hóa đơn</h5>
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 300px;">
+            
+            <canvas id="invoicePieChart" style="max-width: 300px; max-height: 300px;"></canvas>
+        </div>
+
+
+<script>
+    const pieCtx = document.getElementById('invoicePieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Đã thanh toán', 'Chưa thanh toán'],
+            datasets: [{
+                data: [{{ $paidCount }}, {{ $unpaidCount }}],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)', // Xanh
+                    'rgba(255, 99, 132, 0.6)'  // Đỏ
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
 
         <div class="container mt-4">
             <h3 class="text-center">Tổng thu nhập theo năm</h3>

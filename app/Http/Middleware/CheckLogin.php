@@ -19,13 +19,16 @@ class CheckLogin
     {
        
 
-        // dd(session('chutro_name'));
+       
         // Kiểm tra xem thông tin trong session có tồn tại không
         if (!session('chutro_id') || !session('chutro_name')) 
         {
             // Nếu không tồn tại, chuyển hướng đến trang đăng nhập
             return redirect()->route('auth.showLoginForm')->withErrors(['message' => 'Vui lòng đăng nhập trước!']);
         }
+
+        // Kiểm tra nếu không có thông tin khách thuê trong session
+      
 
         return $next($request);
     }

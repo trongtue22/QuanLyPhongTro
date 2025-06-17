@@ -14,6 +14,7 @@ class dichvu extends Model
     protected $fillable = 
     [
         'chutro_id', // Foreign key for ChuTro
+        'daytro_id', // Foreign key for DayTro
         'dien',
         'nuoc',
         'wifi',
@@ -38,7 +39,8 @@ class dichvu extends Model
     // Mối quan hệ 1:N với HoaDon
     public function hoadons()
     {
-        return $this->hasMany(HoaDon::class, 'dichvu_id');
+        return $this->belongsToMany(HoaDon::class, 'hoadon_dichvu')
+            ->withTimestamps();
     }
 
     // 1:1 relationship with ChuTro
@@ -47,6 +49,9 @@ class dichvu extends Model
         return $this->belongsTo(ChuTro::class, 'chutro_id');
     }
 
-
+    public function daytro()
+    {
+       return $this->belongsTo(DayTro::class, 'daytro_id');
+    }
 
 }

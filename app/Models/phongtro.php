@@ -32,4 +32,14 @@ class phongtro extends Model
     {
         return $this->belongsToMany(khachthue::class, 'khachthue_phongtro');
     }
+
+    public function sucophongtro()
+    {
+        return $this->hasMany(SucoPhongTro::class, 'phongtro_id');
+    }
+
+    public function khachthue_phongtro()
+    {
+        return $this->hasMany(KhachThue_PhongTro::class, 'phongtro_id');
+    }
 }

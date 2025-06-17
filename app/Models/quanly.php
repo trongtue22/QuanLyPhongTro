@@ -22,6 +22,7 @@ class QuanLy extends Authenticatable implements JWTSubject
     [
         'chutro_id',
         'ho_ten',
+        'email',
         'sodienthoai',
         'gioitinh',
         'cccd',
@@ -60,6 +61,12 @@ class QuanLy extends Authenticatable implements JWTSubject
     public function daytros()
     {
         return $this->hasMany(daytro::class, 'quanly_id');
+    }
+
+    
+    public function chutro()
+    {
+        return $this->belongsTo(Chutro::class, 'chutro_id');
     }
 
 }

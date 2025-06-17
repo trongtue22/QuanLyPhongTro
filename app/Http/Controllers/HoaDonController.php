@@ -16,95 +16,102 @@ class HoaDonController extends Controller
     //
     public function view()
     {   
-            $chutro_id = session('chutro_id');
-        
-            $condition = session()->has('user_type') ? 'quanly_id' : 'chutro_id';
+        $chutro_id = session('chutro_id');
+        $condition = session()->has('user_type') ? 'quanly_id' : 'chutro_id';
 
-            // Truy vấn lấy các hóa đơn chỉ thuộc về chủ trọ hiện tại và phân trang
-            $hoadons = Hoadon::whereHas('hopdong.khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) 
-            {
-                 $query->where($condition, $chutro_id); // Lọc theo chutro_id
-                })
-                ->with([
-                    'hopdong.khachthue_phongtro.khachthue',   // Lấy thông tin khách thuê
-                    'hopdong.khachthue_phongtro.phongtro.daytro', // Lấy thông tin phòng trọ và dãy trọ
-                    'dichvu'  // Lấy thông tin dịch vụ
-                ])
-                ->paginate(10); // Số lượng hóa đơn trên mỗi trang, ví dụ 10
-        
-            return view('pages.hoadon', compact('hoadons'));
+        // Lấy các hóa đơn liên quan và phân trang
+        $hoadons = Hoadon::whereHas('hopdong.khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) {
+                $query->where($condition, $chutro_id);
+            })
+            ->with([
+                'hopdong.khachthue_phongtro.khachthue',
+                'hopdong.khachthue_phongtro.phongtro.daytro',
+            ])
+            ->paginate(10);
+
+        // Lấy dịch vụ mới nhất cho từng dãy trọ
+        $dichvu = DichVu::where('chutro_id', $chutro_id)
+            ->orderByDesc('id')
+            ->get()
+            ->unique('daytro_id')
+            ->keyBy('daytro_id');
+
+        // Gán dịch vụ tương ứng vào từng hóa đơn
+        $hoadons->getCollection()->transform(function ($hoadon) use ($dichvu) {
+            $daytroId = optional($hoadon->hopdong?->khachthue_phongtro?->phongtro?->daytro)->id;
+            $hoadon->dv = $dichvu[$daytroId] ?? null;
+            return $hoadon;
+        });
+
+        return view('pages.hoadon', compact('hoadons'));
     }
 
     // Trả về data cho phần Thêm Hóa Đơn
     public function viewAdd()
     {
-        // Lấy chutro_id từ session
-        $chutro_id = session('chutro_id'); // Nó là biến đa hình theo quanly hay chutro mà hiện ra khác nhau 
-        
-        $dichvu_id = $chutro_id;
 
+        // Lấy chutro_id từ session
+        $chutro_id = session('chutro_id'); 
+    
+        $dichvu_id = $chutro_id;
+    
         $condition = session()->has('user_type') ? 'quanly_id' : 'chutro_id';
         
         if (session()->has('user_type')) 
         {
             $quanly = quanly::where('id', $chutro_id)->first();
-            $dichvu_id = $quanly->chutro_id; // Lấy ra chutro_id dựa trên id của quanly 
-
-           
+            $dichvu_id = $quanly->chutro_id; // Lấy chutro_id của quản lý
         }
+    
+        // Lấy dịch vụ mới nhất
+        // $dichvu = dichvu::where('chutro_id', $dichvu_id)
+        //     ->latest() // Lấy dịch vụ mới nhất theo created_at
+        //     ->first();
 
-        //dd($chutro_id,$condition);
-        // dd($chutro_id);
-
-        $dichvu = dichvu::where('chutro_id', $dichvu_id)->first(); // Vấn đề ở đây 
-      
-        // dd($dichvu);
-
-        // Bắt đầu từ HopDong, lấy ra tất cả hợp đồng có liên kết với khách thuê, phòng trọ và dãy trọ
+        $dichvu = DichVu::where('chutro_id', $chutro_id)
+            ->orderByDesc('id')
+            ->get()
+            ->unique('daytro_id')
+            ->keyBy('daytro_id');
+        
+        
+        // Lấy hợp đồng có liên kết với khách thuê, phòng trọ và dãy trọ
         $hopdongs = HopDong::whereHas('khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) {
                 $query->where($condition, $chutro_id);
             })
             ->with([
-                'khachthue_phongtro.khachthue',  // Lấy khách thuê liên quan
-                'khachthue_phongtro.phongtro.daytro' // Lấy phòng trọ và dãy trọ liên quan
+                'khachthue_phongtro.khachthue',  
+                'khachthue_phongtro.phongtro.daytro' 
             ])
             ->get();
-        // dd($hopdongs);
-        // Lấy các dãy trọ từ danh sách hợp đồng
-        $daytros = $hopdongs->pluck('khachthue_phongtro.phongtro.daytro')->unique('id');
-        
-        // Lấy các phòng trọ từ danh sách hợp đồng
-        $phongtros = $hopdongs->pluck('khachthue_phongtro.phongtro')->unique('id');
        
-        // dd($phongtros);
-        // Lấy các khách thuê từ danh sách hợp đồng
-        $khachthues = $hopdongs->pluck('khachthue_phongtro.khachthue')->unique('id');
         
-        // Tìm giá trị tiền nước lớn nhất nhóm theo `hopdong_id` => Theo dichvu thuộc vào chutro đang login  
+            
+        // Lấy dãy trọ, phòng trọ, khách thuê từ danh sách hợp đồng
+        $daytros = $hopdongs->pluck('khachthue_phongtro.phongtro.daytro')->unique('id');
+        $phongtros = $hopdongs->pluck('khachthue_phongtro.phongtro')->unique('id');
+        $khachthues = $hopdongs->pluck('khachthue_phongtro.khachthue')->unique('id');
+    
+        // Lấy giá trị nước lớn nhất nhóm theo hopdong_id
         $maxSonuocMoi = HoaDon::selectRaw('MAX(sonuocmoi) as max_sonuocmoi, hopdong_id')
-        ->whereHas('dichvu', function($query) use ($dichvu_id) {
-            $query->where('chutro_id', $dichvu_id);
-        })
-        ->groupBy('hopdong_id')
-        ->get();
-
-        // dd($maxSonuocMoi);
+            ->whereHas('dichvus', function($query) use ($dichvu_id) {
+                $query->where('chutro_id', $dichvu_id);
+            })
+            ->groupBy('hopdong_id')
+            ->get();
     
+        // Lấy giá trị điện lớn nhất nhóm theo hopdong_id
         $maxSodienMoi = HoaDon::selectRaw('MAX(sodienmoi) as max_sodienmoi, hopdong_id')
-        ->whereHas('dichvu', function($query) use ($dichvu_id) {
-            $query->where('chutro_id', $dichvu_id);
-        })
-        ->groupBy('hopdong_id')
-        ->get();
-    
-        // dd($maxSodienMoi);
+            ->whereHas('dichvus', function($query) use ($dichvu_id) {
+                $query->where('chutro_id', $dichvu_id);
+            })
+            ->groupBy('hopdong_id')
+            ->get();
         
         $khachthue_phongtro = khachthue_phongtro::all();
-        // dd($khachthue_phongtro);
         
-        // dd($dichvu);
-      
-        // Trả về view với các dữ liệu liên quan
+        
+        // Trả về view
         return view('pages.addHoaDon', compact(
             'daytros', 
             'phongtros', 
@@ -119,39 +126,44 @@ class HoaDonController extends Controller
 
 
     public function add(Request $request)
-    {   
-        // Check tính độc nhất của tháng tạo hóa đơn theo cùng 1 dãy hợp đồng 
-        $ngaybatdau = Carbon::parse($request->ngaybatdau)->format('Y-m'); // Lấy năm-tháng từ ngày
+{   
+    // Check tính độc nhất của tháng tạo hóa đơn theo cùng 1 dãy hợp đồng 
+    $ngaybatdau = Carbon::parse($request->ngaybatdau)->format('Y-m'); // Lấy năm-tháng từ ngày
      
-        // Kiểm tra trùng lặp theo hopdong_id và tháng-năm
-        $duplicateHoaDon = hoadon::where('hopdong_id', $request->hopdong_id)
-            ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$ngaybatdau])
-            ->exists();
+    // Kiểm tra trùng lặp theo hopdong_id và tháng-năm
+    $duplicateHoaDon = hoadon::where('hopdong_id', $request->hopdong_id)
+        ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$ngaybatdau])
+        ->exists();
     
-        // Nếu hóa đơn đã tồn tại cho tháng này, trả về thông báo lỗi
-        if ($duplicateHoaDon) {
-            return redirect()->back()->withErrors(['ngaybatdau' => 'Hóa đơn cho tháng này đã tồn tại cho hợp đồng này!']);
-        }
-
-        // Thêm vào trong hóa đơn
-        $hoadon = hoadon::create([
-            'dichvu_id' => $request->dichvu_id,
-            'hopdong_id' => $request->hopdong_id,
-            'sodiencu' => $request->diencu,
-            'sodienmoi' => $request->dienmoi,
-            'sonuoccu' => $request->nuoccu,
-            'sonuocmoi' => $request->nuocmoi,
-            'tongtien' => $request->tongtien,
-            'status'   => $request->status, 
-        ]);
-        $hoadon->save();
-
-        flash()->option('position', 'top-center')->timeout(2000)->success('Đã thêm hóa đơn thành công!');
-        
-        return redirect()->route('HoaDon.view');
-       
-        
+    // Nếu hóa đơn đã tồn tại cho tháng này, trả về thông báo lỗi
+    if ($duplicateHoaDon) {
+        return redirect()->back()->withErrors(['ngaybatdau' => 'Đã tồn tại hóa đơn cho phòng trọ này trong tháng hiện tại!']);
     }
+
+    // Chuyển đổi tongtien từ định dạng VNĐ (VD: 5.560.000) thành số (VD: 5560000)
+    $tongtien = str_replace('.', '', $request->tongtien); // Loại bỏ dấu chấm
+    $tongtien = floatval($tongtien); // Chuyển thành số
+
+    // Thêm vào trong hóa đơn
+    $hoadon = hoadon::create([
+        'dichvu_id' => $request->dichvu_id,
+        'hopdong_id' => $request->hopdong_id,
+        'sodiencu' => $request->diencu,
+        'sodienmoi' => $request->dienmoi,
+        'sonuoccu' => $request->nuoccu,
+        'sonuocmoi' => $request->nuocmoi,
+        'tongtien' => $tongtien, // Sử dụng giá trị đã chuyển đổi
+        'status'   => $request->status, 
+    ]);
+
+    $hoadon->dichvus()->attach($request->dichvu_id);
+
+    $hoadon->save();
+
+    flash()->option('position', 'top-center')->timeout(2000)->success('Đã thêm hóa đơn thành công!');
+    
+    return redirect()->route('HoaDon.view');
+}
 
     public function delete($id)
     {   
@@ -196,7 +208,7 @@ class HoaDonController extends Controller
              ->with([
                  'hopdong.khachthue_phongtro.khachthue',
                  'hopdong.khachthue_phongtro.phongtro.daytro',
-                 'dichvu'
+                 'dichvus'
              ])
              ->paginate(10);
      
@@ -208,6 +220,7 @@ class HoaDonController extends Controller
 
     public function viewUpdate($id)
     {   
+       
         $chutro_id = session('chutro_id');
     
         if (session()->has('user_type')) 
@@ -217,7 +230,11 @@ class HoaDonController extends Controller
             $chutro_id = $quanly->chutro_id; // Lấy ra chutro_id dựa trên id của quanly 
         }
 
-        $dichvu = dichvu::where('chutro_id', $chutro_id)->first();
+          $dichvu = DichVu::where('chutro_id', $chutro_id)
+        ->orderByDesc('id')
+        ->get()
+        ->unique('daytro_id')
+        ->keyBy('daytro_id');
 
         // Bắt đầu từ HopDong, lấy ra tất cả hợp đồng có liên kết với khách thuê, phòng trọ và dãy trọ
         $hopdongs = HopDong::whereHas('khachthue_phongtro.phongtro.daytro', function ($query) use ($chutro_id) {
@@ -242,14 +259,14 @@ class HoaDonController extends Controller
         
         // Tìm giá trị tiền nước lớn nhất nhóm theo `hopdong_id` => Theo dichvu thuộc vào chutro đang login  
         $maxSonuocMoi = HoaDon::selectRaw('MAX(sonuocmoi) as max_sonuocmoi, hopdong_id')
-        ->whereHas('dichvu', function($query) use ($chutro_id) {
+        ->whereHas('dichvus', function($query) use ($chutro_id) {
             $query->where('chutro_id', $chutro_id);
         })
         ->groupBy('hopdong_id')
         ->get();
     
         $maxSodienMoi = HoaDon::selectRaw('MAX(sodienmoi) as max_sodienmoi, hopdong_id')
-        ->whereHas('dichvu', function($query) use ($chutro_id) {
+        ->whereHas('dichvus', function($query) use ($chutro_id) {
             $query->where('chutro_id', $chutro_id);
         })
         ->groupBy('hopdong_id')
@@ -273,7 +290,7 @@ class HoaDonController extends Controller
         $hopdongIdHienTai = $HoadonHienDai->hopdong_id;
            
         $sodienmoiHienTai = $HoadonHienDai->sodienmoi;
-     
+        
         $hoadonTiepTheo = Hoadon::where('hopdong_id', $hopdongIdHienTai) // Điều kiện lọc theo hopdong_id
         ->where('sodienmoi', '>', $sodienmoiHienTai) // Lọc các giá trị lớn hơn số hiện tại
         ->orderBy('sodienmoi', 'asc') // Sắp xếp theo thứ tự tăng dần
@@ -310,6 +327,7 @@ class HoaDonController extends Controller
         ));
 
     }
+
 
 
 
@@ -362,15 +380,15 @@ class HoaDonController extends Controller
         }
 
 
-        // Kiểm tra trùng lặp theo hopdong_id và tháng-năm
-        $duplicateHoaDon = hoadon::where('hopdong_id', $request->hopdong_id)
-            ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$ngaybatdau])
-            ->exists();
+        // // Kiểm tra trùng lặp theo hopdong_id và tháng-năm
+        // $duplicateHoaDon = hoadon::where('hopdong_id', $request->hopdong_id)
+        //     ->whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$ngaybatdau])
+        //     ->exists();
     
-        // Nếu hóa đơn đã tồn tại cho tháng này, trả về thông báo lỗi
-        if ($duplicateHoaDon) {
-            return redirect()->back()->withErrors(['ngaybatdau' => 'Hóa đơn cho tháng này đã tồn tại cho hợp đồng này!']);
-        }
+        // // Nếu hóa đơn đã tồn tại cho tháng này, trả về thông báo lỗi
+        // if ($duplicateHoaDon) {
+        //     return redirect()->back()->withErrors(['ngaybatdau' => 'Hóa đơn cho tháng này đã tồn tại cho hợp đồng này!']);
+        // }
 
             // Update tổng tiền mới cho hóa đơn tiếp theo => Vì thông số thay đổi nên ta cần phải update lại tổng tiền cho hoadon tiep theo đó
             if($maxValue == false)

@@ -6,6 +6,7 @@ use App\Models\phongtro;
 use App\Models\khachthue;
 use App\Models\khachthue_phongtro;
 use App\Models\quanly;
+use Illuminate\Validation\Rule;
 use Flasher\Laravel\Facade\Flasher;
 use Flasher\Prime\Test\FlasherAssert;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class PhongTroController extends Controller
     public function show($id)
     {   
         // GỌi ra các Phòng Trọ liên quan đến Dãy Trọ theo ID 
-        $daytro = DayTro::with('phongtros')->findOrFail($id);
+        $daytro = DayTro::with(['phongtros.sucophongtro'])->findOrFail($id);
 
         // Adjust the number 10 as needed
         $phongtros = $daytro->phongtros()->paginate(5);
@@ -51,37 +52,40 @@ class PhongTroController extends Controller
         return view('pages.phongtro', compact('daytro', 'phongtros'))->with('showContent', false)->with('khachthuePhongTro',false);;
     }   
 
-    
+
+
     public function stored(Request $request)
-    {   
-        // Tạo và lưu vào DB
-        $request->validate([
-            'sophong' => 'required|integer|unique:phongtro,sophong',
-            'tienphong' => 'required|numeric,min:0',
-        ], 
-        ['sophong.unique' => 'Số phòng đã tồn tại',
-        'sophong.integer' => 'Trường số phòng chỉ được phép chứa số nguyên',
-        'sophong.unique' => 'Số phòng đã tồn tại',
-        'tienphong.required' => 'Trường tiền phòng là bắt buộc',
-        'tienphong.numeric' => 'Trường tiền phòng chỉ được phép chứa số',
-        'tienphong.min'      => 'Không được nhập số âm',
-       
-    
-        ]); // Tùy chỉnh thông báo lỗi
-    
-
-        $phongtro = phongtro::create([
-            'daytro_id' => $request->daytro,
-            'sophong' => $request->sophong,
-            'tienphong' => $request->tienphong,
-        ]);
-
-        $phongtro->save();
+    {
+            $request->validate([
+                'sophong' => 'required|string',
+                'tienphong' => 'required|numeric|min:0',
+            ], [
+                'sophong.required' => 'Trường số phòng là bắt buộc',
+                'sophong.string' => 'Trường số phòng phải là chuỗi (có thể chứa chữ và số)',
+                'tienphong.required' => 'Trường tiền phòng là bắt buộc',
+                'tienphong.numeric' => 'Trường tiền phòng chỉ được phép chứa số',
+                'tienphong.min' => 'Không được nhập số âm',
+            ]);
         
-        flash()->option('position', 'top-center')->timeout(1000)->success('Đã thêm phòng trọ thành công');
+            // Kiểm tra trùng số phòng trong cùng một dãy trọ
+            $exists = PhongTro::where('daytro_id', $request->daytro)
+                ->where('sophong', $request->sophong)
+                ->exists();
         
-        return redirect()->back();
-    }   
+            if ($exists) {
+                return back()->withErrors(['sophong' => 'Số phòng đã tồn tại trong dãy trọ này'])->withInput();
+            }
+        
+            // Tạo mới phòng trọ
+            PhongTro::create([
+                'daytro_id' => $request->daytro,
+                'sophong' => $request->sophong,
+                'tienphong' => $request->tienphong,
+            ]);
+        
+            flash()->option('position', 'top-center')->timeout(1000)->success('Đã thêm phòng trọ thành công');
+            return redirect()->back();
+    }
 
 
     public function delete($id)
@@ -108,7 +112,7 @@ class PhongTroController extends Controller
         // Nếu validate thấy vị phạm nó sẽ lưu error vào session và nhảy tới redirect() ngay lập tức 
         $validator = Validator::make($request->all(), 
         [
-           'sophong' => 'required|string|max:255|unique:phongtro,sophong'.$id,
+           'sophong' => 'required|string|max:255|unique:phongtro,sophong,' . $id,
            'tienphong' => 'required|numeric|min:0', // Sửa từ string thành numeric
         ],
         [
@@ -211,28 +215,26 @@ class PhongTroController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'sophong' => 'required|integer|unique:phongtro,sophong',
-            'tienphong' => 'required|numeric,min:0',
-        ], 
-        ['sophong.unique' => 'Số phòng đã tồn tại',
-        'sophong.integer' => 'Trường số phòng chỉ được phép chứa số nguyên.',
-        'sophong.unique' => 'Số phòng đã tồn tại.',
-        'tienphong.required' => 'Trường tiền phòng là bắt buộc.',
-        'tienphong.numeric' => 'Trường tiền phòng chỉ được phép chứa số.',
-        'tienphong.min'      => 'Không được nhập số âm',
-      
-    
-        ]); // Tùy chỉnh thông báo lỗi
+            'sophong' => 'required|string|max:50|unique:phongtro,sophong',
+            'tienphong' => 'required|numeric|min:0',
+        ], [
+            'sophong.required' => 'Trường số phòng là bắt buộc.',
+            'sophong.string' => 'Số phòng phải là chuỗi ký tự.',
+            'sophong.max' => 'Số phòng không được quá 50 ký tự.',
+            'sophong.unique' => 'Số phòng đã tồn tại.',
+            'tienphong.required' => 'Trường tiền phòng là bắt buộc.',
+            'tienphong.numeric' => 'Trường tiền phòng chỉ được phép chứa số.',
+            'tienphong.min' => 'Không được nhập số âm.',
+        ]);
         
         // Lưu vào phòng trọ của bản thân nó => Nếu là QL thì nó đã cũng lưu các dãy trọ hợp lệ (do view add hiện thị toàn dãy trọ của view này)
         $phongtro = PhongTro::create($request->all());
        
+        $phongtro->save();
+       
         flash()->option('position', 'top-center')->timeout(1000)->success('Phòng trọ đã được thêm thành công!');
 
-        // Trả về để có thể kiểm tra bằng Postman
-        return response()->json([
-            'phongtro' => $phongtro
-        ]);   
+        return redirect()->back();
     }
 
     
@@ -260,15 +262,16 @@ class PhongTroController extends Controller
                   ->orWhere('tienphong', 'LIKE', "%{$searchValue}%")
                   ->orWhere('status', 'LIKE', "%{$searchValue}%");
         })
-        ->whereHas('daytro', function ($query) use ($searchValue, $chutro_id) {
+        ->orWhereHas('daytro', function ($query) use ($searchValue, $chutro_id) {  
+            // Thêm điều kiện tìm kiếm trong tendaytro
             $query->where('tendaytro', 'LIKE', "%{$searchValue}%")
-                  ->when(session()->has('user_type'), function ($query) use ($chutro_id) {
-                      $query->where('quanly_id', $chutro_id);
-                  }, function ($query) use ($chutro_id) {
-                      $query->where('chutro_id', $chutro_id);
+                  ->when(session()->has('user_type'), function ($q) use ($chutro_id) {
+                      $q->where('quanly_id', $chutro_id);
+                  }, function ($q) use ($chutro_id) {
+                      $q->where('chutro_id', $chutro_id);
                   });
         })
-        ->paginate(5);  // Phân trang kết quả tìm kiếm
+        ->paginate(5);
         
         // Return the search view with the resluts compacted
         return view('pages.phongtro',compact('phongtros','daytros'))->with('showContent', true)->with('khachthuePhongTro',false);
@@ -312,7 +315,8 @@ class PhongTroController extends Controller
         ->where($condition, $chutro_id)  // Ảnh hướng đến view của bên chức năng add
         ->get();
     
-        // dd($phongtros);
+        // dd($phongtros); 
+
          // Trả về view với các phòng trọ đã được load dãy trọ tương ứng
          return view('pages.phongtro', compact('phongtros','khachthue','daytros'))
                 ->with('showContent', false)

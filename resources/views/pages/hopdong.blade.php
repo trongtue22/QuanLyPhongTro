@@ -108,14 +108,24 @@
                             <i class="fas fa-edit"></i>
                         </a>
 
-                        <button class="btn btn-danger" data-toggle="modal" data-target="#deleteModal{{$hopdong->id }}">
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#deleteModal{{$hopdong->id}}">
                               <i class="fas fa-trash-alt"></i>
                         </button> 
 
                         {{-- Gọi modal xác nhận xóa theo ID của từng Dãy Trọ --}}
                         @include('modals.deleteHopDong')
-                                       
+                                    
+                        
+                        <button class="btn btn-info" data-toggle="modal" data-target="#previewModal{{$hopdong->id}}">
+                            <i class="fas fa-file-pdf"></i> 
+                        </button>
+
+                        @include('modals.previewHopDong', ['hopdong' => $hopdong])
+
+
                     </td>
+
+                    
                 </tr>
                 @endforeach 
             {{-- Nếu sau khi search không tìm ra data --}}

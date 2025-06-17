@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('tiencoc', 10, 2);
             $table->integer('soxe');
             $table->timestamps();
+            $table->softDeletes(); 
         });
     }
 

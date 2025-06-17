@@ -15,12 +15,14 @@ use App\Http\Controllers\KhachThueController;
 use App\Http\Controllers\PhongTroController;
 use App\Http\Controllers\QuanLyController;
 use App\Http\Controllers\EmailController;
-
+use App\Http\Controllers\PDFController;
+use App\Http\Controllers\SuCoPhongTroController;
 use Illuminate\Support\Facades\Route;
 
 
 // Midlleware
 use App\Http\Middleware\ClearFlashMessage;
+use App\Models\khachthue;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 
@@ -55,18 +57,31 @@ Route::post('quanly/auth/login',[AuthController::class,'quanlyLogin'])->name('qu
 // Phần Logout
 Route::post('auth/logout',[AuthController::class,'logout'])->name('auth.logout');
 
+                            // Phiên cho bên khách thuê sử dụng 
+// View Login cho Khach thue
+Route::get('khachthue/auth/login', [AuthController::class, 'ViewLogin'])->name('khachthue.ViewLogin');
+
+// Login váo trang home khách thuê
+Route::post('auth/khachthue/login',[AuthController::class,'khachthueLogin'])->name('khachthue.login');
+
+
+
 
 
 
 
 // Check coi các khi user access các router phía dưới đã có login chưa 
-Route::middleware(['checklogin','PivotDichVu'])->group(function () {    
+Route::middleware(['checklogin','PivotDichVu'])->group(function () 
+{    
 
 // Phần view setting
 Route::get('user/setting',[ChutroController::class,'view'])->name('user.setting');
 
 // Phần update setting
 Route::put('user/setting/{id}', [ChutroController::class, 'update'])->name('user.update');
+
+// Phần xóa thông tin chutro
+Route::delete('user/setting/{id}', [ChuTroController::class, 'destroy'])->name('chutro.destroy');
 
                                     /*  Dãy Trọ - CRUD => table DayTro */ 
 // View dãy trọ 
@@ -103,7 +118,7 @@ Route::delete('user/daytro/phongtro/{id}', [PhongTroController::class, 'delete']
 Route::put('user/daytro/phongtro/{id}', [PhongTroController::class, 'update'])->name('phongtroDayTro.update');
 
 // Search phòng trọ
-Route::get('/user/daytro/phongtro/', [PhongTroController::class, 'search'])->name('phongtroDayTro.search');
+Route::get('user/daytro/phongtro/', [PhongTroController::class, 'search'])->name('phongtroDayTro.search');
 
                                  // Khách thuê theo Phòng Trọ - CRUD => Table Khach Thue - Phong Tro
 // View khách thuê theo phòng trọ
@@ -147,6 +162,11 @@ Route::post('user/khachthue', [KhachThueController::class, 'add'])->name('KhachT
 Route::get('user/khachthue/search', [KhachThueController::class, 'searching'])->name('KhachThue.search');
 
 
+
+
+
+
+
                                         // Phòng trọ của khách thuê 
 // View cho phòng trọ của Khách Thuê 
 Route::get('user/khachthue/{id}/phongtro', [PhongTroController::class, 'index'])->name('phongtroKhachThue.view');
@@ -161,7 +181,8 @@ Route::post('user/khachthue/phongtro/add', [PhongTroController::class, 'add'])->
 Route::delete('user/khachthue/{khachthue_id}/phongtro/{phongtro_id}', [PhongTroController::class, 'destroy'])->name('phongtroKhachThue.destroy');
 
 
-                                        // Hợp đồng của khách thuê
+
+                                        // Hợp đồng 
 // View hợp đồng
 Route::get('user/hopdong', [HopDongController::class, 'view'])->name('HopDong.view');
 
@@ -183,13 +204,18 @@ Route::put('user/hopdong/update/{id}', [HopDongController::class, 'update'])->na
 // Search hợp đồng
 Route::get('user/hopdong/search', [HopDongController::class, 'search'])->name('HopDong.search');
 
+// Thanh lý hoợp đồng
+Route::post('user/hopdong/thanhly/{id}', [HopDongController::class, 'thanhLy'])->name('HopDong.thanhLy');
+
+
+
 
                                         // Dich Vu
 // View dịch vụ 
 Route::get('user/dichvu', [DichVuController::class, 'view'])->name('DichVu.view');            
 
 // Update dịch vụ
-Route::put('user/dichvu/update/{id}', [DichVuController::class, 'update'])->name('DichVu.update');
+Route::post('user/dichvu/store', [DichVuController::class, 'storeNew'])->name('DichVu.store');
 
 
                                         //  Hoa Don
@@ -241,9 +267,64 @@ Route::get('user/quanly/search', [QuanLyController::class, 'search'])->name('Qua
 // Update quản lý
 Route::put('user/quanly/update/{id}', [QuanLyController::class, 'update'])->name('QuanLy.update');
 
+// Profile quản lý 
+Route::get('user/quanly/profile', [QuanLyController::class, 'profile'])->name('QuanLy.profile');
+
+// Update profile quản lý
+Route::put('user/quanly/profile/update/{id}', [QuanLyController::class, 'updateProfile'])->name('profile.update');
 
                                                 // Email
-Route::get('user/send-welcome-email', [EmailController::class, 'sendWelcomeEmail']);
+// View quản lý email
+Route::get('user/quanly/lien-he', [EmailController::class, 'showForm'])->name('lienhe.form');
+
+Route::post('user/quanly/lien-he', [EmailController::class, 'sendLienHe'])->name('lienhe.send');
+
+Route::post('user/toggle-autoemail', [EmailController::class, 'toggleAutoEmail'])->name('toggle.autoemail');
+
+
+Route::get('user/user/lien-he', [EmailController::class, 'view'])->name('lienhe.view');
+
+Route::post('user/user/lien-he', [EmailController::class, 'sendEmail'])->name('lienhe.email');
+// Route::get('user/send-welcome-email', [EmailController::class, 'sendWelcomeEmail']);
+
+
+ // PDF
+Route::get('user/hoadon/pdf/{id}', [PDFController::class, 'exportPDF'])->name('HoaDon.exportPDF');
+
+Route::get('user/hopdong/pdf/{id}', [PDFController::class, 'HopDongPdf'])->name('HopDong.exportPdf');
+
+Route::post('user/dashboard/pdf', [PDFController::class, 'downloadPDF'])->name('stats.download.pdf');
+
+// SU co phong tro
+Route::post('suco-phongtro/tao/{phongtro}', [SuCoPhongTroController::class, 'create'])->name('suco.store');
+// Hiện thị view gợi ý dịch vụ 
+Route::get('user/goi-y-sua-chua', [SuCoPhongTroController::class, 'SuaChua'])->name('suachua.view');
+
+// Update các sự cố dãy trọ trong view
+Route::post('user/suco/{phongtro}', [SuCoPhongTroController::class, 'tonghop'])->name('suco.tonghop');
+
 
 });
 
+
+
+Route::middleware(['CheckChuTroLogin'])->group(function () 
+{
+ 
+Route::get('khachthue/dashboard', [KhachThueController::class, 'khachthueDashboard'])->name('khachthue.dashboard');
+
+Route::get('khachthue/hoadon/{id}', [KhachThueController::class, 'khachthueHoaDon'])->name('hoadon.view');
+
+Route::post('khachthue/hoadon/sendEmail', [KhachThueController::class, 'sendEmail'])->name('khachthue.send');
+
+Route::post('auth/khachthue/logout',[AuthController::class,'khachthueLogout'])->name('khachthue.logout');
+
+// Profile khách thuê
+Route::get('khachthue/profile', [KhachThueController::class, 'profile'])->name('khachthue.profile');
+
+// Update profile khách thuê
+Route::put('khachthue/profile/update/{id}', [KhachThueController::class, 'updateProfile'])->name('khachthue.profile.update');
+
+
+
+});

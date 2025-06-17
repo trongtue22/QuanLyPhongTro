@@ -167,47 +167,48 @@
     <li class="nav-item dropdown no-arrow">
         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ session('chutro_name') }}</span>
-            {{-- <img class="img-profile rounded-circle"
-                src="{{asset('img/undraw_profile.svg')}}"> --}}
-                {{-- images/png-transparent-john-wick-portrait-keanu-charles-reeves-thumbnail.png --}}
-                @if(!session()->has('user_type'))
-                
-                    <img class="img-profile rounded-circle"
-                    src="{{asset( session('imageUrl'))}}">
-                   
-                
-                @endif
-                
-         </a>
-        <!-- Dropdown - User Information -->
+            @if(!session()->has('user_type'))
+                <div class="d-flex flex-column align-items-end mr-2">
+                    <span class="d-none d-lg-inline text-gray-600 small">Chức vụ: chủ trọ</span>
+                    <span class="d-none d-lg-inline text-gray-600 small">{{ session('chutro_name') }}</span>
+                </div>
+                <img class="img-profile rounded-circle" src="{{asset(session('imageUrl'))}}">
+            @else
+            <div class="d-flex flex-column align-items-end mr-2">
+                <span class="d-none d-lg-inline text-gray-600 small">Chức vụ: quản lý</span>
+                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ session('chutro_name') }}</span>
+                <!-- Thêm hình ảnh cho người dùng khác nếu cần -->
+            </div>
+            @endif
+        </a>
+        <!-- Dropdown - User Information => QL -->
         <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
             aria-labelledby="userDropdown">
             @if(!session()->has('user_type'))
-            
                 <a class="dropdown-item" href="{{route('user.setting')}}">
                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                     Hồ sơ
                 </a>
-            
+            @else
+            <a class="dropdown-item" href="{{route('QuanLy.profile')}}">
+                <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                Hồ sơ 
+            </a>
             @endif
-
             
-            {{-- <a class="dropdown-item" href="#">
-                <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                Settings
-            </a> --}}
-            {{-- <a class="dropdown-item" href="#">
-                <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
-                Activity Log
-            </a> --}}
             <div class="dropdown-divider"></div>
             {{-- Gọi qua Modal Logout --}}
-            <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+            @if(!session()->has('user_type'))
+            <a class="dropdown-item" href="{{route('auth.logout')}}" data-toggle="modal" data-target="#logoutModal">
                 <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                 Đăng xuất
             </a>
-
+            @else
+            <a class="dropdown-item" href="{{route('khachthue.logout')}}" data-toggle="modal" data-target="#logoutModal">
+                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                Đăng xuất 
+            </a>
+            @endif
         </div>
     </li>
 

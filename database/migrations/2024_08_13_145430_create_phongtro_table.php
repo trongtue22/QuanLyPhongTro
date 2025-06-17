@@ -15,14 +15,16 @@ return new class extends Migration
             $table->id();
             $table->foreignId('daytro_id')->constrained('daytro')->onDelete('cascade'); // Giả sử bảng DayTro có tên là day_tro
 
-            // Số phòng -> Ko dc trùng lặp => Có thể đổi thành string nếu cần sau này s 
-            $table->integer('sophong')->unique();
-           
+            // Số phòng -> Ko dc trùng lặp => Có thể đổi thành string nếu cần sau này 
+            // $table->integer('sophong')->unique();
+            
+            $table->string('sophong');
+            // Chỉ được phép có 1 phòng trọ trong 1 dãy trọ (ko dc trùng nhau) => Khác dãy trọ thì OK 
+            $table->unique(['daytro_id', 'sophong']);
             // Các trường thông tin khác 
             $table->decimal('tienphong', 10, 2);
             // Chứa thông tin phong trọ "đã thuê" hay "Phòng Trống" => Mặc định: phòng trống 
             $table->boolean('status')->default(false);
-
             $table->timestamps();
 
 

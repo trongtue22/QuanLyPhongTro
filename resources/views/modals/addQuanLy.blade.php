@@ -28,6 +28,11 @@
                         <label for="room">Tên quản lý:</label>
                         <input name="ho_ten" type="text" class="form-control" id="room" placeholder="Nhập tên quản lý" required>
                     </div>
+
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input name="email" type="email" class="form-control" id="email" placeholder="Nhập email" required>
+                    </div>
                     
                     <div class="form-group">
                         <label for="price">Số điện thoại:</label>

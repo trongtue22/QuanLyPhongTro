@@ -65,7 +65,7 @@
 
 
 <!-- Script to Handle Phongtro Dropdown Population -->
-<script>
+{{-- <script>
     document.addEventListener('DOMContentLoaded', function () {
         var daytroSelect = document.getElementById('daytro');
         var phongtroSelect = document.getElementById('phongtro');
@@ -74,21 +74,25 @@
 
         // Fetch the list of rooms passed from the controller
         var phongtros = @json($daytros->pluck('phongtros')->flatten());  // Flatten to get all rooms in a single array
-
         console.log("Data: ",phongtros);
-    
-
+        
+        
         // When the user selects a Dãy trọ (daytro)
-        daytroSelect.addEventListener('change', function () {
+        daytroSelect.addEventListener('change', function () 
+        {
+            
             var daytroId = daytroSelect.value;
 
             // Reset phongtro options
             phongtroSelect.innerHTML = '<option value="">Chọn phòng trọ</option>';
             phongtroSelect.disabled = false;
 
-            if (daytroId) {
+            if (daytroId) 
+            {
+                console.log("Selected Dãy trọ ID: ", daytroId);
                 // Filter rooms by the selected dãy trọ ID
-                var filteredPhongtros = phongtros.filter(function (phongtro) {
+                var filteredPhongtros = phongtros.filter(function (phongtro) 
+                {
                     return phongtro.daytro_id == daytroId;
                 });
                 
@@ -114,4 +118,50 @@
 
 
 
+</script> --}}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var daytroSelect = document.getElementById('daytro');
+        var phongtroSelect = document.getElementById('phongtro');
+
+        // Fetch the list of daytro and their associated rooms passed from the controller
+        var daytros = @json($daytros); // Dữ liệu dãy trọ đã bao gồm phòng trọ
+        console.log("Daytro Data: ", daytros);
+
+        // When the user selects a Dãy trọ (daytro)
+        daytroSelect.addEventListener('change', function () {
+            var daytroId = daytroSelect.value;
+
+            // Reset phongtro options
+            phongtroSelect.innerHTML = '<option value="">Chọn phòng trọ</option>';
+            phongtroSelect.disabled = true;
+
+            if (daytroId) {
+                console.log("Selected Dãy trọ ID: ", daytroId);
+
+                // Find the selected daytro and its associated rooms
+                var selectedDaytro = daytros.find(function (daytro) {
+                    return daytro.id == parseInt(daytroId); // Ensure type consistency
+                });
+
+                if (selectedDaytro && selectedDaytro.phongtros.length > 0) {
+                    console.log("Phòng trọ thuộc dãy trọ đã chọn: ", selectedDaytro.phongtros);
+
+                    // Add the filtered rooms to the phongtro select element
+                    selectedDaytro.phongtros.forEach(function (phongtro) {
+                        var option = document.createElement('option');
+                        option.value = phongtro.id;
+                        option.text = 'Phòng số: ' + phongtro.sophong;
+                        phongtroSelect.appendChild(option);
+                    });
+
+                    // Enable the phongtro dropdown
+                    phongtroSelect.disabled = false;
+                } else {
+                    console.log('Không có phòng trọ nào thuộc dãy trọ đã chọn.');
+                }
+            }
+        });
+    });
 </script>

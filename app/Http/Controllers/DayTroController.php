@@ -21,8 +21,6 @@ class DayTroController extends Controller
     public function daytro()
     {
         // Lấy data ra ngoài để in ra màn hình
-        
-
         $chutro_id = session('chutro_id'); // Biến đa hình (vừa là chutro vừa là quanly)
        
         if(session()->has('user_type'))
@@ -33,7 +31,8 @@ class DayTroController extends Controller
             $daytros = DayTro::where('chutro_id', $chutro_id)->paginate(5);
         }
         
-        $quanlys = quanly::where('chutro_id', $chutro_id)->get(); // Chỉ có data nếu là role chutro
+        // Chỉ có data nếu là role chutro
+        $quanlys = quanly::where('chutro_id', $chutro_id)->get(); 
         
         $currentUrl = url()->current();
 

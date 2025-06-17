@@ -8,25 +8,27 @@ use App\Models\quanly;
 use App\Models\khachthue_phongtro;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+
 class HopDongController extends Controller
 {
     public function view()
+{
+    $chutro_id = session('chutro_id');
+    $condition = session()->has('user_type') ? 'quanly_id' : 'chutro_id';
+
+    $hopdongs = HopDong::whereHas('khachthue_phongtro.phongtro.daytro', function ($query) use ($chutro_id, $condition)
     {
-        $chutro_id = session('chutro_id');
-        $condition = session()->has('user_type') ? 'quanly_id' : 'chutro_id';
-    
-        $hopdongs = HopDong::whereHas('khachthue_phongtro.phongtro.daytro', function ($query) use ($chutro_id, $condition) 
-        {
-                $query->where($condition, $chutro_id); // Biến $condition sẽ biến thiên tùy tình huống 
-        })
-            ->with([
-                'khachthue_phongtro.khachthue',  
-                'khachthue_phongtro.phongtro.daytro'
-            ])
-            ->paginate(10);
-    
-        return view('pages.hopdong', compact('hopdongs'));
-    }
+        $query->where($condition, $chutro_id); // Biến $condition sẽ biến thiên tùy tình huống
+    })
+    ->with([
+        'khachthue_phongtro.khachthue',
+        'khachthue_phongtro.phongtro.daytro.chutro', // Đảm bảo load Chủ Trọ
+        'khachthue_phongtro.phongtro.daytro.quanly' // THÊM DÒNG NÀY ĐỂ LOAD QUẢN LÝ
+    ])
+    ->paginate(10);
+
+    return view('pages.hopdong', compact('hopdongs'));
+}
 
     public function viewAdd()
     {

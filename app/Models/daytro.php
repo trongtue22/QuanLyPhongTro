@@ -45,4 +45,10 @@ class daytro extends Model
      {
          return $this->belongsTo(quanly::class, 'quanly_id');
      }
+
+
+    public function dichvus()
+    {
+         return $this->hasOne(DichVu::class, 'daytro_id');
+    } 
 }

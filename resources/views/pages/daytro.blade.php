@@ -31,9 +31,11 @@
 
         {{-- Nút thêm mới data vào Table --}}
         <div>
+            @if(!session()->has('user_type'))
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addBlockModal">
                 Thêm Mới
             </button>
+            @endif
         </div>
     
         {{-- Search form --}}
@@ -56,7 +58,7 @@
                 <th>Xã</th>
                 <th>Số Nhà</th>
                 @if(!session()->has('user_type'))
-                <th>Phân quyền</th>
+                <th>Quản Lý</th>
                 @endif
                 <th>Hành Động</th>
             </tr>
@@ -96,17 +98,21 @@
                     @endif
                     
                     <td>
+                        @if(!session()->has('user_type'))
                         <button class="btn btn-warning" data-toggle="modal" data-target="#editModal{{ $daytro->id }}">
                             <i class="fas fa-edit"></i>
                         </button>
+                        @endif
 
+                        @if(!session()->has('user_type'))
                         <button class="btn btn-danger" data-toggle="modal" data-target="#deleteModal{{ $daytro->id }}">
                               <i class="fas fa-trash-alt"></i>
                         </button>
+                        @endif
 
                          <!-- Thẻ để chuyển qua view theo id của Dãy Trọ -->
                          <a class="btn btn-info" href="{{ route('phongtroDayTro.view', $daytro->id) }}">
-                            <i class="fas fa-eye"></i> <!-- Biểu tượng xem -->
+                            <i class="fas fa-door-open"></i> <!-- Biểu tượng xem -->
                          </a>
 
 

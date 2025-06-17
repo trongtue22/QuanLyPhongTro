@@ -16,8 +16,11 @@ return new class extends Migration
             $table->id();
             $table->string('ho_ten');
             $table->string('email')->unique();
+            $table->string('cccd')->unique(); // Thêm CCCD
+            $table->string('sodienthoai');
             $table->string('mat_khau');
             $table->string('hinh_anh')->nullable();
+            $table->boolean('send_monthly')->default(false);
             $table->timestamps();
         });
     }

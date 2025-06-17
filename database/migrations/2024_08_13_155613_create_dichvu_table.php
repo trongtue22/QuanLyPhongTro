@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('dichvu', function (Blueprint $table) {
+        Schema::create('dichvu', function (Blueprint $table) 
+        {
             $table->id();
             // FK tham chiếu đến chutro
             $table->foreignId('chutro_id')->constrained('chutro')->onDelete('cascade');
+            // FK tham chiếu đến DayTro (them cai nay vo) 
+            $table->foreignId('daytro_id')->nullable()->constrained('daytro')->onDelete('cascade');
 
             $table->decimal('dien', 10, 2);  // Chi phí điện
             $table->decimal('nuoc', 10, 2);  // Chi phí nước

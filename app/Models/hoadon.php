@@ -36,9 +36,10 @@ class hoadon extends Model
     //     return $this->belongsToMany(dichvu::class,'hoadon_dichvu');
     // }
 
-    public function dichvu()
+    public function dichvus()
     {
-        return $this->belongsTo(DichVu::class, 'dichvu_id');
+        return $this->belongsToMany(DichVu::class, 'hoadon_dichvu')
+            ->withTimestamps();
     }
 
     public function hopdong()

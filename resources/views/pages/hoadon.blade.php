@@ -89,29 +89,39 @@
                     @endif
                 </td>
                 
-                {{-- Tiền phòng --}}
-                <td class="pl-4">{{ number_format($hoadon->hopdong->khachthue_phongtro->phongtro->tienphong,0, ',', '.') }} </td>
+               {{-- Tiền phòng --}}
+               <td class="pl-4">{{ number_format($hoadon->hopdong->khachthue_phongtro->phongtro->tienphong,0, ',', '.') }} </td>
                 
-                {{-- Điện cũ --}}
-                <td class="pl-4">{{ number_format($hoadon->sodiencu, 0, ',', '.') }}</td>
+               {{-- Điện cũ --}}
+               <td class="pl-4">{{ number_format($hoadon->sodiencu, 0, ',', '.') }}</td>
 
-                {{-- Điện mới --}}
-                <td class="pl-4">{{ number_format($hoadon->sodienmoi, 0, ',', '.') }}</td>
+               {{-- Điện mới --}}
+               <td class="pl-4">{{ number_format($hoadon->sodienmoi, 0, ',', '.') }}</td>
 
-                {{-- Nước cũ --}}
-                <td class="pl-4">{{ number_format($hoadon->sonuoccu, 0, ',', '.') }}</td>
+               {{-- Nước cũ --}}
+               <td class="pl-4">{{ number_format($hoadon->sonuoccu, 0, ',', '.') }}</td>
 
-                {{-- Nước mới --}}
-                <td class="pl-4">{{ number_format($hoadon->sonuocmoi, 0, ',', '.') }}</td>
-                
-                {{-- Tiền wifi --}}
-                <td class="pl-5">{{ number_format($hoadon->dichvu->wifi,0, ',', '.') }}</td>
-                
-                {{-- Tiền rác --}}
-                <td class="pl-5">{{ number_format($hoadon->dichvu->rac,0, ',', '.') }}</td>
-                
-                {{-- Tiền gửi xe --}}
-                <td class="pl-5"> {{number_format($hoadon->dichvu->guixe * $hoadon->hopdong->soxe) }}</td>
+               {{-- Nước mới --}}
+               <td class="pl-4">{{ number_format($hoadon->sonuocmoi, 0, ',', '.') }}</td>
+               
+               <!-- Error chỗ này -->
+                {{-- Tiền Wifi --}}
+                <td class="pl-4">
+                    {{ optional($hoadon->dv)->wifi 
+                        ? number_format($hoadon->dv->wifi, 0, ',', '.') 
+                        : '' }}
+                </td>
+                <td class="pl-5">
+                    {{ optional($hoadon->dv)->rac 
+                        ? number_format($hoadon->dv->rac, 0, ',', '.') 
+                        : '' }}
+                </td>
+                <td class="pl-5">
+                    {{ optional($hoadon->dv)->guixe 
+                        ? number_format($hoadon->dv->guixe * $hoadon->hopdong->soxe, 0, ',', '.') 
+                        : '' }}
+                </td>
+
                 
                 {{-- Tổng tiền --}}
                 <td class="pl-4">{{ number_format($hoadon->tongtien,0, ',', '.') }} </td>
@@ -155,8 +165,14 @@
 
                     
                     
-                    {{-- Gọi modal chỉnh sửa theo ID của từng Dãy Trọ , ['daytro' => $daytro]--}}
-                    {{-- @include('')             --}}
+                   {{-- Button xem trước PDF --}}
+                   <button class="btn btn-info" data-toggle="modal" data-target="#previewModal{{$hoadon->id}}">
+                        <i class="fas fa-file-pdf"></i> 
+                    </button>  
+            
+                    {{-- Gọi modal xem trước PDF --}}
+                    @include('modals.previewHoaDon', ['hoadon' => $hoadon]) 
+
                     
                 </td>
 

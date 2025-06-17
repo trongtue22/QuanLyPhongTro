@@ -145,7 +145,8 @@
                     <span>Hóa Đơn</span></a>
             </li>
 
-            @if(!session()->has('user_type'))
+            {{-- Chỉ hiện thị nếu là Chủ Trọ --}}
+            @if(!session()->has('user_type')) 
             <li class="nav-item">
                 <a class="nav-link" href="{{route('QuanLy.view')}}">
                   <i class="fas fa-user-cog"></i> <!-- Đổi icon ở đây -->
@@ -154,7 +155,30 @@
               </li>
             @endif
            
+            @if(session()->has('user_type')) 
+            <li class="nav-item">
+                <a class="nav-link" href="{{route('lienhe.form')}}">
+                  <i class="fas fa-paper-plane"></i> <!-- Đổi icon ở đây -->
+                  <span>Liên hệ</span>
+                </a>
+              </li>
+            @endif
 
+            @if(!session()->has('user_type')) 
+            <li class="nav-item">
+                <a class="nav-link" href="{{route('lienhe.view')}}">
+                  <i class="fas fa-paper-plane"></i> <!-- Đổi icon ở đây -->
+                  <span>Liên hệ</span>
+                </a>
+              </li>
+            @endif
+           
+            <li class="nav-item">
+                <a class="nav-link" href="{{route('suachua.view')}}">
+                 <i class="fas fa-hammer"></i><!-- Đổi icon ở đây -->
+                  <span>Gợi ý</span>
+                </a>
+            </li>
 
 
 

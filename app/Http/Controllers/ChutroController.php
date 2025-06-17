@@ -22,106 +22,104 @@ class ChutroController extends Controller
 
     public function update(Request $request, $id)
     {
-        // dd($request->all());
-        
-        $chutro = ChuTro::findorfail($id);
-        
-        // Thông báo bằng tiếng việt
-        
+        $chutro = ChuTro::findOrFail($id);
+
+        // Thông báo lỗi tiếng Việt
         $customMessages = [
             'ho_ten.unique' => 'Họ tên đã được sử dụng.',
             'required' => 'Vui lòng nhập :attribute.',
             'email' => 'Địa chỉ email không hợp lệ.',
-            'unique' => 'Địa chỉ email đã được sử dụng.',
+            'email.regex' => 'Email không được chứa khoảng trắng.',
+            'email.unique' => 'Email đã được sử dụng.',
             'min' => 'Mật khẩu phải có ít nhất :min ký tự.',
-            'regex' => 'Địa chỉ email không được chứa khoảng trắng.',
-            // 'confirmPassword.same' => 'Mật khẩu và mật khẩu nhập lại phải trùng nhau',
-            'avatar.mimetypes' => 'Chỉ nhận định dạng ảnh: jpeg, png'
+            'avatar.mimetypes' => 'Chỉ nhận định dạng ảnh: jpeg, png',
+            'sodienthoai.required' => 'Vui lòng nhập số điện thoại.',
+            'sodienthoai.numeric' => 'Số điện thoại phải là số.',
+            'sodienthoai.digits_between' => 'Số điện thoại phải từ 5 đến 12 chữ số.',
+            'sodienthoai.unique' => 'Số điện thoại đã tồn tại.',
+            'cccd.required' => 'Vui lòng nhập CCCD.',
+            'cccd.unique' => 'CCCD đã tồn tại.',
         ];
 
-        //dd(1);
-        // Validate dữ liệu đầu vào
+        // Validate dữ liệu
         $request->validate([
             'ho_ten' => 'required|unique:chutro,ho_ten,' . $id,
             'email' => ['required', 'email', 'unique:chutro,email,' . $id, 'regex:/^[\S]+$/u'],
+            'sodienthoai' => 'required|numeric|digits_between:5,12|unique:chutro,sodienthoai,' . $id,
+            'cccd' => 'required|string|max:20|unique:chutro,cccd,' . $id,
             'old_password' => 'nullable|min:6',
             'new_password' => 'nullable|min:6',
-            // 'confirmPassword' => 'required|same:mat_khau',
             'avatar' => ['nullable', 'mimetypes:image/jpeg,image/png'],
-        ], $customMessages );
-              
-        // Update tên và Email 
-        $chutro->ho_ten = $request->input('ho_ten');
+        ], $customMessages);
 
+        // Cập nhật thông tin cơ bản
+        $chutro->ho_ten = $request->input('ho_ten');
         $chutro->email = $request->input('email');
-        
-        // Update mật khẩu
+        $chutro->sodienthoai = $request->input('sodienthoai');
+        $chutro->cccd = $request->input('cccd');
+
+        // Xử lý mật khẩu nếu có
         $old_password = $request->input('old_password');
         $new_password = $request->input('new_password');
         $confirm_password = $request->input('confirm_password');
-        
-        // Update picture
-        // dd(1);
 
-        // Check coi user có nhập vào ô mật khẩu hay ko 
-        if($old_password)
+        if ($old_password) 
         {
-           
-            // Check coi mật khẩu user nhập có khớp trong DB hay ko 
             if ($chutro && Hash::check($old_password, $chutro->mat_khau)) 
             {
-                // Nếu khớp thì check tiếp 
-                if($new_password == $confirm_password)
+                if ($new_password == $confirm_password) {
+                    $chutro->mat_khau = bcrypt($new_password);
+                } else 
                 {
-                   // Băm mật khẩu trước khi update
-                   $chutro->mat_khau = bcrypt($new_password);
+                    return redirect()->back()->withErrors(['confirm_password' => 'Mật khẩu xác nhận không trùng khớp.']);
                 }
-                
-                // Thông báo lỗi nhập sai mật khẩu xác nhận
+            } else 
+            {
+                return redirect()->back()->withErrors(['old_password' => 'Mật khẩu nhập không khớp. Vui lòng nhập lại']);
+            }
+        }
 
-                return redirect()->back()->withErrors(['confirm_password' => 'Mật khẩu xác nhận không trùng khớp.']);
+        // Xử lý avatar nếu có
+        if ($request->hasFile('avatar')) {
+            if ($chutro->hinh_anh && file_exists(public_path($chutro->hinh_anh))) {
+                unlink(public_path($chutro->hinh_anh));
             }
 
-            // Nếu không khớp thì thông báo lỗi
-            // dd(1);
-            return redirect()->back()->withErrors(['old_password' => 'Mật khẩu nhập không khớp. Vui lòng nhập lại']);
-
-        }
-       
-        // Xử lý ảnh
-        if ($request->hasFile('avatar'))
-        {
-           // Xóa ảnh cũ nếu có
-           if ($chutro->hinh_anh && file_exists(public_path($chutro->hinh_anh))) {
-               unlink(public_path($chutro->hinh_anh));
-           }
-   
-           // Lưu ảnh mới vào thư mục 'images'
-           $file = $request->file('avatar');
-        //    $fileName = time() . '_' . $file->getClientOriginalName();
-           $fileName = $file->getClientOriginalName();
-           $file->move(public_path('images'), $fileName);
-   
-           // Cập nhật đường dẫn ảnh mới
-           $chutro->hinh_anh = 'images/' . $fileName;
+            $file = $request->file('avatar');
+            $fileName = $file->getClientOriginalName();
+            $file->move(public_path('images'), $fileName);
+            $chutro->hinh_anh = 'images/' . $fileName;
         }
 
-
-     
         $chutro->save();
-        
-        // Thay đổi lại biến session toàn cục để update lại profile 
+
+        // Cập nhật lại session
         session([
             'chutro_name' => $chutro->ho_ten,
-            'imageUrl' =>  $chutro->hinh_anh
+            'imageUrl' => $chutro->hinh_anh,
         ]);
 
-
-        // Đặt flash message với timeout
         flash()->option('position', 'top-center')->timeout(1000)->success('Thông tin được cập nhật thành công!');
-        
         return redirect()->back();
-
     }
+
+
+    public function destroy($id)
+    {
+        $chutro = ChuTro::findOrFail($id);
+       
+        // Xóa ảnh nếu có
+        if ($chutro->hinh_anh && file_exists(public_path($chutro->hinh_anh))) {
+            unlink(public_path($chutro->hinh_anh));
+        }
+
+        $chutro->delete();
+
+        session()->flush(); // Xóa session nếu đang đăng nhập
+
+        // Trở về trang đăng nhập
+        return redirect()->route('auth.showLoginForm');
+    }
+
 
 }

@@ -16,7 +16,12 @@ return new class extends Migration
             $table->id(); // id (PK) - Tự động tăng
             // FK tới bảng ChuTro
             $table->foreignId('chutro_id')->constrained('ChuTro')->onDelete('cascade'); 
-            $table->foreignId('quanly_id')->nullable()->constrained('quanly')->onDelete('cascade'); 
+            
+            // $table->foreignId('quanly_id')->nullable()->constrained('quanly')->onDelete('cascade'); 
+
+            // FK tới bảng QuanLy, khi quản lý bị xóa, quanly_id trong daytro sẽ thành NULL
+            $table->foreignId('quanly_id')->nullable()->constrained('quanly')->onDelete('SET NULL'); 
+
             // Các trường thông tin khác 
             $table->string('tendaytro')->unique(); 
             $table->string('tinh');

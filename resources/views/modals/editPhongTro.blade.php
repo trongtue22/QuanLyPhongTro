@@ -31,7 +31,7 @@
                    
                     <div class="form-group">
                         <label for="price">Tiền phòng</label>
-                        <input type="text" class="form-control" id="price" name="tienphong" value="{{number_format($phongtro->tienphong, 0, ',', '.')}}" required>
+                        <input type="text" class="form-control" id="price" name="tienphong" value="{{ number_format($phongtro->tienphong, 0, '', '') }}" required>
                     </div>
                     
                 </div>

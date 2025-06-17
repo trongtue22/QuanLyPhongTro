@@ -15,6 +15,7 @@ class khachthue_phongtro extends Model
     protected $fillable = [
         'khachthue_id',
         'phongtro_id',
+        'trangthai',
              
     ];
     

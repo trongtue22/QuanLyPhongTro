@@ -10,6 +10,7 @@ use App\Models\KhachThue;
 use App\Models\hopdong;
 use App\Models\hoadon;
 use App\Models\QuanLy;
+use App\Models\ChuTro;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,7 @@ class DashBoardController extends Controller
     // Thống kê theo chủ trọ 
     public function view(Request $request)
     {   
+       
         // Thống kê dãy trọ 
         $chutro_id = session('chutro_id'); // Biến đa hình vừa là quản lý vừa có thể là chủ trọ 
 
@@ -72,13 +74,14 @@ class DashBoardController extends Controller
          // Các năm hiển thị trong danh sách cần dc chọn
          $years = range(2024, Carbon::now()->year);
         
-       
-
-        $hoadonByMonth = DB::table('hoadon')
-        ->select(DB::raw('MONTH(created_at) as month, SUM(tongtien) as total_income'))
-        ->where('status', 1) // Chỉ lấy những hóa đơn có status = 1
-        ->whereYear('created_at', $selectedYear) // Lọc theo năm hiện tại
-        ->groupBy(DB::raw('MONTH(created_at)'))
+        
+        $hoadonByMonth = Hoadon::where('status', 1)
+        ->whereYear('created_at', $selectedYear)
+        ->whereHas('hopdong.khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) {
+            $query->where($condition, $chutro_id);
+        })
+        ->selectRaw('MONTH(created_at) as month, SUM(tongtien) as total_income')
+        ->groupByRaw('MONTH(created_at)')
         ->pluck('total_income', 'month');
 
         // Danh sách các năm và dữ liệu thu nhập cho từng năm
@@ -104,6 +107,25 @@ class DashBoardController extends Controller
             ]);
         }
     
+        $paidCount = Hoadon::where('status', 1)
+        ->whereHas('hopdong.khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) {
+        $query->where($condition, $chutro_id);
+        })->count();
+
+        $unpaidCount = Hoadon::where('status', 0)
+        ->whereHas('hopdong.khachthue_phongtro.phongtro.daytro', function ($query) use ($condition, $chutro_id) {
+        $query->where($condition, $chutro_id);
+        })->count();
+
+        if(session()->has('user_type')) {
+           
+            $chutro = null;
+        }else
+        { 
+            $chutro = ChuTro::findorfail($chutro_id);
+        }
+       
+        
         
         return view('pages.dashboard', compact(
             'daytroCount',
@@ -115,7 +137,10 @@ class DashBoardController extends Controller
             'months',
             'years',
             'incomeDataByMonth',
-            'selectedYear'
+            'selectedYear',
+            'paidCount',
+            'unpaidCount',
+            'chutro'
         ));   
     }
 

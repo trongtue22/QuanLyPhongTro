@@ -25,14 +25,11 @@
                         {{-- Cột Avatar --}}
                         
                         <div class="col-md-4 text-center">
-                            
+                                                               {{-- Cách để hiện thị ảnh view từ DB ra   --}}
                             <img id="avatarPreview" src="{{asset( session('imageUrl'))}}" alt="Avatar" class="img-thumbnail rounded-circle" width="300" height="300">
-                                 <div class="mt-3">
+                                <div class="mt-3">
                                     <!-- Nút bấm Thay đổi ảnh đại diện -->
                                     <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('avatarInput').click()">Thay đổi ảnh đại diện</button>
-                                
-                                    <!-- Input để chọn ảnh, nhưng sẽ bị ẩn đi -->     
-                                    {{-- <input type="file" id="avatarInput" name="avatar"  accept="image/*" onchange="previewImage(event)"> --}}
 
                                 </div>
 
@@ -68,6 +65,26 @@
                                             @enderror
                                 </div>
 
+                                {{-- Số điện thoại --}}
+                                <div class="form-group">
+                                    <label for="sodienthoai">Số điện thoại</label>
+                                    <input type="text" name="sodienthoai" id="sodienthoai" class="form-control" 
+                                           value="{{ $chutro->sodienthoai }}" placeholder="Số điện thoại" required>
+                                    @error('sodienthoai')
+                                    <div style="color: red;">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                {{-- CCCD --}}
+                                <div class="form-group">
+                                    <label for="cccd">CCCD</label>
+                                    <input type="text" name="cccd" id="cccd" class="form-control" 
+                                           value="{{ $chutro->cccd }}" placeholder="Số CCCD" required>
+                                    @error('cccd')
+                                    <div style="color: red;">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
                                 {{-- Mật khẩu --}}
                                 <div class="form-group">
                                     <label for="password">Mật khẩu cũ</label>
@@ -99,7 +116,16 @@
                                 {{-- Nút Submit --}}
                                 <div class="form-group mt-4">
                                     <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+
+                                      <!-- Nút Xóa tài khoản -->
+                                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmDeleteModal">
+                                        Xóa tài khoản
+                                    </button>
+
+                                    @include('modals.deleteTaiKhoan') <!-- Gọi modal xác nhận xóa tài khoản -->
                                 </div>
+
+                               
                             </form>
                         </div> <!-- End Form Column -->
                     </div> <!-- End Row -->

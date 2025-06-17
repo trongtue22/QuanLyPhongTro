@@ -23,6 +23,8 @@ class ChuTro extends Authenticatable implements JWTSubject
         'ho_ten',
         'email',
         'mat_khau',
+        'cccd',
+        'sodienthoai',
         'hinh_anh'
     ];
 
@@ -67,4 +69,30 @@ class ChuTro extends Authenticatable implements JWTSubject
     {
         return $this->hasOne(DichVu::class, 'chutro_id');
     }
+
+    public function phongtros()
+    {
+    return $this->hasManyThrough(
+        PhongTro::class, // Model cuối cùng
+        DayTro::class,   // Model trung gian
+        'chutro_id',                 // Foreign key ở DayTro
+        'daytro_id',                 // Foreign key ở PhongTro
+        'id',                        // Local key ở ChuTro
+        'id'                         // Local key ở DayTro
+    );
+    }
+
+    public function hopdongs()
+{
+    return $this->hasManyThrough(
+        HopDong::class,   // Model cuối
+        PhongTro::class,  // Model trung gian
+        'daytro_id',                  // FK ở PhongTro liên kết đến DayTro
+        'phongtro_id',                // FK ở HopDong liên kết đến PhongTro
+        'id',                         // Local key ở ChuTro
+        'id'                          // Local key ở DayTro
+    )->whereHas('daytro', function ($query) {
+        $query->whereColumn('daytros.chutro_id', 'chutros.id');
+    });
+}
 }

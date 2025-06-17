@@ -51,8 +51,12 @@
 
                     <!-- Content Row -->
                     <div class="row">
-                        @yield('content')
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                @yield('content')
+                        </div>
                     </div>
+                </div>
 
                 </div>
                 <!-- /.container-fluid -->

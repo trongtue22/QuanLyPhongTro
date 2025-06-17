@@ -51,6 +51,7 @@
         <thead>
             <tr>
                 <th>Tên</th>
+                <th>Email</th>
                 <th>Số điện thoại</th>
                 <th>Giới tính</th>
                 <th>CCCD</th>
@@ -63,6 +64,7 @@
                 @foreach ($quanlys as $quanly)
                 <tr>
                     <td>{{ $quanly->ho_ten }}</td>
+                    <td>{{ $quanly->email }}</td>
                     <td>{{  $quanly->sodienthoai }}</td>
                     <td class="pl-4">{{ $quanly->gioitinh == 0 ? 'Nam' : 'Nữ' }}</td>
                     <td>{{ $quanly->cccd }}</td>

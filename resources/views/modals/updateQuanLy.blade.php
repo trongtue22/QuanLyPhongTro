@@ -28,15 +28,25 @@
                         <label for="room">Tên quản lý:</label>
                         <input type="text" class="form-control" id="room" name="ho_ten" value="{{$quanly->ho_ten}}" required>
                     </div>
+
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{$quanly->email}}" required>
+                    </div>
                    
                     <div class="form-group">
                         <label for="price">Số điện thoại:</label>
-                        <input type="text" class="form-control" id="price" name="sodienthoai" value="{{$quanly->sodienthoai}}" required>
+                        <input type="text" class="form-control" id="phone" name="sodienthoai" value="{{$quanly->sodienthoai}}" required>
                     </div>
 
                     <div class="form-group">
                         <label for="room">CCCD:</label>
-                        <input type="text" class="form-control" id="room" name="cccd" value="{{$quanly->cccd}}" required>
+                        <input type="text" class="form-control" id="cccd" name="cccd" value="{{$quanly->cccd}}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mật khẩu (nhập nếu muốn đổi):</label>
+                        <input type="password" class="form-control" id="password" name="password">
                     </div>
 
                     
